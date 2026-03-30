@@ -1,0 +1,18 @@
+# Google API Libraries
+google-api-python-client>=2.100.0
+google-auth-httplib2>=0.1.0
+google-auth-oauthlib>=1.0.0
+gspread>=6.0.0
+
+# AI & Content
+google-generativeai>=0.8.0
+google-genai>=1.0.0
+
+# Image Processing
+Pillow>=10.0.0
+requests>=2.31.0
+
+# Utilities
+python-dotenv>=1.0.0
+beautifulsoup4>=4.12.0
+html5lib>=1.1
