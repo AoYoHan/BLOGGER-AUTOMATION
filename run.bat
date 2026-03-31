@@ -24,6 +24,7 @@ echo  3. [Status] Check Current Status
 echo  4. [Auto] Run Generate + Publish (Once)
 echo  5. [Loop] Auto-loop every 1 hour
 echo  6. [Init] Initialize Google Sheets
+echo  7. [Update] Pull latest from GitHub
 echo  0. Exit
 echo ==========================================
 set /p choice="Choose an option (0-6): "
@@ -34,6 +35,7 @@ if "%choice%"=="3" goto STATUS
 if "%choice%"=="4" goto AUTO
 if "%choice%"=="5" goto LOOP
 if "%choice%"=="6" goto INIT
+if "%choice%"=="7" goto UPDATE
 if "%choice%"=="0" exit
 goto MENU
 
@@ -79,6 +81,18 @@ echo Proceed? (Y/N)
 set /p confirm="> "
 if /i "%confirm%"=="Y" (
     %PYTHON_EXE% main.py init
+)
+pause
+goto MENU
+
+:UPDATE
+echo.
+echo [RUNNING] Checking for updates from GitHub...
+git pull origin main
+if %errorlevel% neq 0 (
+    echo [ERROR] Pull failed. Please check your git configuration and remote URL.
+) else (
+    echo [SUCCESS] Successfully updated from GitHub.
 )
 pause
 goto MENU
