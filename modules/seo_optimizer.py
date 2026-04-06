@@ -18,9 +18,7 @@ def analyze_seo(content: dict, keyword: str) -> dict:
         dict: {"score": int, "checks": dict, "suggestions": list}
     """
     title = content.get("title", "")
-    meta = content.get("meta_description", "")
     html = content.get("content", "")
-    tags = content.get("tags", [])
 
     # HTML → 텍스트
     soup = BeautifulSoup(html, "html5lib")
@@ -32,10 +30,6 @@ def analyze_seo(content: dict, keyword: str) -> dict:
     # 1. 제목 검사
     checks["제목 길이 (30~60자)"] = 30 <= len(title) <= 60
     checks["제목에 키워드 포함"] = keyword.lower() in title.lower()
-
-    # 2. 메타 설명 검사
-    checks["메타설명 길이 (120~155자)"] = 120 <= len(meta) <= 155
-    checks["메타설명에 키워드 포함"] = keyword.lower() in meta.lower()
 
     # 3. 본문 검사
     word_count = len(text)
@@ -64,9 +58,6 @@ def analyze_seo(content: dict, keyword: str) -> dict:
     lists = soup.find_all(["ul", "ol"])
     checks["리스트 활용 (가독성)"] = len(lists) >= 1
 
-    # 8. 태그
-    checks["태그 등록 (3개 이상)"] = len(tags) >= 3
-
     # ── 점수 계산 ──
     passed = sum(1 for v in checks.values() if v)
     total = len(checks)
@@ -78,8 +69,6 @@ def analyze_seo(content: dict, keyword: str) -> dict:
         suggestions.append(f"제목 길이를 30~60자로 조정하세요 (현재: {len(title)}자)")
     if not checks.get("제목에 키워드 포함"):
         suggestions.append(f"제목에 '{keyword}' 키워드를 포함하세요")
-    if not checks.get("메타설명 길이 (120~155자)"):
-        suggestions.append(f"메타 설명을 120~155자로 조정하세요 (현재: {len(meta)}자)")
     if not checks.get("본문 길이 (1000자 이상)"):
         suggestions.append(f"본문을 1000자 이상으로 늘리세요 (현재: {word_count}자)")
     if not checks.get("키워드 밀도 (1~3%)"):
@@ -102,7 +91,6 @@ def analyze_seo(content: dict, keyword: str) -> dict:
             "h2_count": len(h2_tags),
             "h3_count": len(h3_tags),
             "list_count": len(lists),
-            "tag_count": len(tags),
         },
     }
 

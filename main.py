@@ -145,9 +145,6 @@ def cmd_generate():
                 f.write(content["content"])
             print(f"  💾 본문 HTML 로컬 저장 완료: {cache_path}")
 
-            preview = content["content"][:200].replace("<", "").replace(">", "")
-            tags_text = ", ".join(content.get("tags", []))
-
             # Drive에 생성된 Google Doc 링크 사용
             doc_url = drive_result.get("doc_url") or drive_result["folder_url"]
 
@@ -157,10 +154,6 @@ def cmd_generate():
             sheets.add_draft(
                 keyword=keyword,
                 title=content["title"],
-                meta=content["meta_description"],
-                tags=tags_text,
-                preview=preview,
-                thumbnail_url=thumbnail_url,
                 doc_url=doc_url,
                 image_prompts=image_prompts,
                 publish_time=default_publish_time,
@@ -263,12 +256,11 @@ def cmd_publish():
                     print(f"  ⚠️ 예약시간 형식 오류 ('{raw_date}'): {e}. 즉시 발행으로 진행합니다.")
 
             # Blogger에 게시
-            tags = [t.strip() for t in draft["tags"].split(",") if t.strip()]
             result = blogger.publish_post(
                 title=draft["title"],
                 content_html=content_html,
-                labels=tags,
-                meta_description=draft.get("meta_description", ""),
+                labels=[],
+                meta_description="",
                 is_draft=False,
                 publish_date=publish_date
             )
