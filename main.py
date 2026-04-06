@@ -129,7 +129,7 @@ def cmd_generate():
             image_prompts = images.get("all_prompts_text", "")
 
             # ── 5단계: 썸네일 생성 건너뛰기 ──
-            thumbnail_url = ""
+            # (썸네일 열이 삭제되어 더 이상 필요 없음)
 
             # ── 6단계: Google Drive 업로드 ──
             drive_result = drive.upload_post_images(keyword, images, content["content"])
@@ -145,6 +145,7 @@ def cmd_generate():
                 f.write(content["content"])
             print(f"  💾 본문 HTML 로컬 저장 완료: {cache_path}")
 
+
             # Drive에 생성된 Google Doc 링크 사용
             doc_url = drive_result.get("doc_url") or drive_result["folder_url"]
 
@@ -154,6 +155,8 @@ def cmd_generate():
             sheets.add_draft(
                 keyword=keyword,
                 title=content["title"],
+                meta=content["meta_description"],
+
                 doc_url=doc_url,
                 image_prompts=image_prompts,
                 publish_time=default_publish_time,
@@ -259,8 +262,8 @@ def cmd_publish():
             result = blogger.publish_post(
                 title=draft["title"],
                 content_html=content_html,
-                labels=[],
-                meta_description="",
+                labels=[], # 태그는 사용하지 않기로 함
+                meta_description=draft.get("meta_description", ""), # 시트의 메타설명 전달
                 is_draft=False,
                 publish_date=publish_date
             )

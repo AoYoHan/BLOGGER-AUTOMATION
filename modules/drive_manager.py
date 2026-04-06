@@ -5,6 +5,8 @@ Google Drive 업로드 모듈
 import io
 import os
 import sys
+import time
+from functools import wraps
 
 from typing import Optional, List, Dict
 from googleapiclient.discovery import build
@@ -13,6 +15,25 @@ from googleapiclient.http import MediaIoBaseUpload
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from config.settings import DRIVE_FOLDER_ID
 from modules.google_auth import get_google_credentials
+
+
+def retry_on_exception(max_retries=3, delay=2):
+    """네트워크 연결 끊김 등 일시적 오류 발생 시 자동 재시도하는 데코레이터"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    print(f"  ⚠️ Drive 통신 지연 발생 (재시도 {attempt + 1}/{max_retries}): {type(e).__name__} - {str(e)[:100]}")
+                    time.sleep(delay)
+            print(f"  ❌ 최대 재시도 횟수 초과.")
+            raise last_exception
+        return wrapper
+    return decorator
 
 
 class DriveManager:
@@ -24,6 +45,7 @@ class DriveManager:
         self.base_folder_id = DRIVE_FOLDER_ID
         print(f"📁 Google Drive 연결됨")
 
+    @retry_on_exception(max_retries=3, delay=2)
     def create_subfolder(self, folder_name: str) -> str:
         """
         base_folder 안에 하위 폴더를 생성합니다.
@@ -52,6 +74,7 @@ class DriveManager:
         print(f"  📂 폴더 생성: {folder_name}")
         return folder["id"]
 
+    @retry_on_exception(max_retries=3, delay=3)
     def upload_text_content(self, title: str, html_content: str, folder_id: str) -> dict:
         """
         블로그 본문을 Google Doc으로 변환하여 업로드합니다.
@@ -83,6 +106,7 @@ class DriveManager:
             "url": file.get("webViewLink"),
         }
 
+    @retry_on_exception(max_retries=3, delay=3)
     def upload_image(self, image_data: bytes, filename: str, folder_id: str,
                      mime_type: str = "image/jpeg") -> dict:
         """

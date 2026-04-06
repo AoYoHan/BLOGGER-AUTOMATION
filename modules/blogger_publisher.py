@@ -93,9 +93,11 @@ class BloggerPublisher:
         if publish_date:
             body["published"] = publish_date
 
-        # 메타 설명이 있으면 customMetaData로 추가
-        if meta_description:
-            body["customMetaData"] = meta_description
+        # 참고: Blogger API v3는 '검색 설명(Meta Description)' 설정을 공식적으로 지원하지 않습니다.
+        # (API를 통해 시도해도 대시보드의 '검색 설명' 칸은 채워지지 않습니다.)
+        # 향후 API가 업데이트될 가능성을 대비해 주석 처리해 둡니다.
+        # if meta_description:
+        #     body["customMetaData"] = meta_description
 
         print(f"\n📤 Blogger 게시 중: '{title[:50]}...'")
         if publish_date:

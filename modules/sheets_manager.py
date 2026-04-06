@@ -52,15 +52,39 @@ class SheetsManager:
         ws.format("A1:G1", {"textFormat": {"bold": True}, "backgroundColor": {"red": 0.85, "green": 0.92, "blue": 1.0}})
 
         # 시트 2: 초안검토
-        headers_drafts = [["키워드", "제목", "본문링크", "이미지 프롬프트", "예약시간", "승인", "비고"]]
+        headers_drafts = [["키워드", "제목", "메타설명", "본문링크", "이미지 프롬프트", "예약시간", "승인", "비고"]]
         if SHEET_DRAFTS not in existing_sheets:
-            ws = self.spreadsheet.add_worksheet(title=SHEET_DRAFTS, rows=100, cols=7)
+            ws = self.spreadsheet.add_worksheet(title=SHEET_DRAFTS, rows=100, cols=8)
+
             print(f"  ✅ '{SHEET_DRAFTS}' 시트 생성됨")
         else:
             ws = self.spreadsheet.worksheet(SHEET_DRAFTS)
         
-        ws.update("A1:G1", headers_drafts)
-        ws.format("A1:G1", {"textFormat": {"bold": True}, "backgroundColor": {"red": 0.9, "green": 1.0, "blue": 0.85}})
+        ws.update("A1:H1", headers_drafts)
+        ws.format("A1:H1", {"textFormat": {"bold": True}, "backgroundColor": {"red": 0.9, "green": 1.0, "blue": 0.85}})
+
+        # 행 높이 21로 고정
+        sheet_id = ws.id
+        body = {
+            "requests": [
+                {
+                    "updateDimensionProperties": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "dimension": "ROWS",
+                            "startIndex": 0,
+                            "endIndex": 1000
+                        },
+                        "properties": {
+                            "pixelSize": 21
+                        },
+                        "fields": "pixelSize"
+                    }
+                }
+            ]
+        }
+        self.spreadsheet.batch_update(body)
+
 
         # 시트 3: 게시현황
         headers_published = [["키워드", "제목", "게시일", "포스트URL", "이미지폴더", "상태", "색인결과"]]
@@ -113,19 +137,37 @@ class SheetsManager:
     # ──────────────────────────────────────────
     #  초안검토 시트 조작
     # ──────────────────────────────────────────
-    def add_draft(self, keyword: str, title: str, doc_url: str, image_prompts: str = "", 
+    def add_draft(self, keyword: str, title: str, meta: str,
+                  doc_url: str, image_prompts: str = "", 
                   publish_time: str = "", approval: str = "대기"):
+
         """초안검토 시트에 새 초안을 추가합니다."""
         ws = self.spreadsheet.worksheet(SHEET_DRAFTS)
         # 이미 같은 키워드가 있으면 업데이트
         existing = ws.get_all_records()
+        row_idx = len(existing) + 2
         for i, row in enumerate(existing, start=2):
             if str(row.get("키워드", "")).strip() == keyword:
-                ws.update(f"A{i}:G{i}", [[keyword, title, doc_url, image_prompts, publish_time, approval, ""]])
-                return i
-        # 새 행 추가
-        ws.append_row([keyword, title, doc_url, image_prompts, publish_time, approval, ""])
-        return len(existing) + 2
+                ws.update(f"A{i}:H{i}", [[keyword, title, meta, doc_url, image_prompts, publish_time, approval, ""]])
+                row_idx = i
+                break
+        else:
+            # 새 행 추가 (loop 안에서 안 걸린 경우)
+            ws.append_row([keyword, title, meta, doc_url, image_prompts, publish_time, approval, ""])
+            
+        # 행 높이 21로 고정
+        sheet_id = ws.id
+        self.spreadsheet.batch_update({
+            "requests": [{
+                "updateDimensionProperties": {
+                    "range": {"sheetId": sheet_id, "dimension": "ROWS", "startIndex": row_idx - 1, "endIndex": row_idx},
+                    "properties": {"pixelSize": 21},
+                    "fields": "pixelSize"
+                }
+            }]
+        })
+        return row_idx
+
 
     def get_approved_drafts(self) -> list[dict]:
         """승인(✅)된 초안 목록을 가져옵니다."""
@@ -139,6 +181,8 @@ class SheetsManager:
                     "row": i,
                     "keyword": str(row.get("키워드", "")).strip(),
                     "title": str(row.get("제목", "")).strip(),
+                    "meta_description": str(row.get("메타설명", "")).strip(),
+
                     "doc_url": str(row.get("본문링크", "")).strip(),
                     "예약시간": str(row.get("예약시간", "")).strip(),
                 })
